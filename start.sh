@@ -3,12 +3,12 @@ set -e
 
 mkdir -p /app/config
 
-# 1. Копируем конфиги из Secret Files Render (ASF.json, bot.json и др.)
+# Копируем конфиги из Secret Files Render (ASF.json, main.json и т.д.)
 if [ -d /etc/secrets ]; then
   cp -f /etc/secrets/* /app/config/ 2>/dev/null || true
 fi
 
-# 2. Настраиваем IPC под порт Render (по умолчанию 10000)
+# Настраиваем IPC под порт Render и доверенные подсети прокси
 PORT_TO_USE="${PORT:-10000}"
 cat <<EOF > /app/config/IPC.config
 {
@@ -27,10 +27,9 @@ cat <<EOF > /app/config/IPC.config
 }
 EOF
 
-# Выдаем права пользователю asf (UID 1000), под которым работает сам процесс
 chown -R 1000:1000 /app/config
 
-# 3. Скрипт постоянной активности: пинг внешнего URL каждые 10 минут
+# Внутренний пинг внешнего URL каждые 10 минут
 if [ -n "$RENDER_EXTERNAL_URL" ]; then
   (
     sleep 60
@@ -41,10 +40,10 @@ if [ -n "$RENDER_EXTERNAL_URL" ]; then
   ) &
 fi
 
-# 4. Запуск ASF
+# Запуск ASF
 cd /app
 if [ -f /app/ArchiSteamFarm.sh ]; then
-  exec sh /app/ArchiSteamFarm.sh --no-restart --system-required
+  exec sh /app/ArchiSteamFarm.sh --no-restart
 else
-  exec ArchiSteamFarm --no-restart --system-required
+  exec ArchiSteamFarm --no-restart
 fi
